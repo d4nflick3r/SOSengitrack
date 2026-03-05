@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sosengitrack-v2';
+const CACHE_NAME = 'sosengitrack-v3';
 const BASE = self.location.pathname.replace(/sw\.js$/, '');
 
 self.addEventListener('install', (event) => {
