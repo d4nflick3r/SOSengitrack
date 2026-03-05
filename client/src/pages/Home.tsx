@@ -195,7 +195,12 @@ export default function Home() {
             <img src={logoImg} alt="SOS Leak Detection" className="h-10 sm:h-12 object-contain" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => resetWeek()}>
+            <Button variant="outline" size="sm" onClick={() => {
+              if (window.confirm('Reset timesheet and expenses for this week? This cannot be undone.')) {
+                resetWeek();
+                clearExpenses();
+              }
+            }}>
               <RotateCcw className="h-4 w-4 mr-2" /> Reset
             </Button>
           </div>
