@@ -5,12 +5,15 @@ import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { metaImagesPlugin } from "./vite-plugin-meta-images";
 
+const isGitHubPages = process.env.GITHUB_ACTIONS === "true";
+
 export default defineConfig({
+  base: isGitHubPages ? "/SOSengitrack/" : "/",
   plugins: [
     react(),
-    runtimeErrorOverlay(),
+    ...(!isGitHubPages ? [runtimeErrorOverlay()] : []),
     tailwindcss(),
-    metaImagesPlugin(),
+    ...(!isGitHubPages ? [metaImagesPlugin()] : []),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
@@ -37,7 +40,9 @@ export default defineConfig({
   },
   root: path.resolve(import.meta.dirname, "client"),
   build: {
-    outDir: path.resolve(import.meta.dirname, "dist/public"),
+    outDir: isGitHubPages
+      ? path.resolve(import.meta.dirname, "client", "dist")
+      : path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
   },
   server: {
