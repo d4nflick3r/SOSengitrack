@@ -8,6 +8,7 @@ export interface ExpenseItem {
   amount: number;
   includesVat: boolean;
   receipt: boolean;
+  receiptPhoto?: string;
 }
 
 export interface ExpensesState {
