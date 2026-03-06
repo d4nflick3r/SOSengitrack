@@ -9,11 +9,39 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Settings2, RotateCcw, Download, Calendar as CalendarIcon, Briefcase, Wrench, Copy, CheckCircle2, Send, Mail, Save, Trash2, User, Plus, Receipt, X } from "lucide-react";
+import { Settings2, RotateCcw, Download, Calendar as CalendarIcon, Briefcase, Wrench, Copy, CheckCircle2, Send, Mail, Save, Trash2, User, Plus, Receipt, X, Camera, Image, Eye } from "lucide-react";
 import logoImg from "@assets/leak-detection-company-224_1772356833916.webp";
 import { format, parseISO } from "date-fns";
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+
+const compressImage = (file: File, maxWidth = 800, quality = 0.6): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = (h * maxWidth) / w;
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { reject('No canvas context'); return; }
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
 
 export default function Home() {
   const { 
@@ -32,6 +60,17 @@ export default function Home() {
   const [expensesCopied, setExpensesCopied] = useState(false);
   const [engineerName, setEngineerName] = useState(() => localStorage.getItem('engineer-name') || '');
   const [nameSaved, setNameSaved] = useState(() => !!localStorage.getItem('engineer-name'));
+  const [previewPhoto, setPreviewPhoto] = useState<string | null>(null);
+  const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const handlePhotoCapture = useCallback(async (expenseId: string, file: File) => {
+    try {
+      const compressed = await compressImage(file);
+      updateExpense(expenseId, { receiptPhoto: compressed, receipt: true });
+    } catch {
+      alert('Could not process the photo. Please try again.');
+    }
+  }, [updateExpense]);
   const handleSaveName = () => {
     localStorage.setItem('engineer-name', engineerName.trim());
     setNameSaved(true);
@@ -95,10 +134,10 @@ export default function Home() {
     if (engineerName.trim()) csv += `Engineer,${engineerName.trim()}\n`;
     csv += `Week Commencing,${state.weekStartDate}\n\n`;
 
-    csv += "Date,Category,Description,Amount Entered (£),Inc. VAT?,Net (£),VAT (£),Gross (£),Receipt\n";
+    csv += "Date,Category,Description,Amount Entered (£),Inc. VAT?,Net (£),VAT (£),Gross (£),Receipt,Photo\n";
     expenses.items.forEach(item => {
       const v = calcVat(item.amount || 0, item.includesVat);
-      csv += `${item.date},"${item.category}","${item.description.replace(/"/g, '""')}",${item.amount.toFixed(2)},${item.includesVat ? 'Yes' : 'No'},${v.net.toFixed(2)},${v.vat.toFixed(2)},${v.gross.toFixed(2)},${item.receipt ? 'Yes' : 'No'}\n`;
+      csv += `${item.date},"${item.category}","${item.description.replace(/"/g, '""')}",${item.amount.toFixed(2)},${item.includesVat ? 'Yes' : 'No'},${v.net.toFixed(2)},${v.vat.toFixed(2)},${v.gross.toFixed(2)},${item.receipt ? 'Yes' : 'No'},${item.receiptPhoto ? 'Yes' : 'No'}\n`;
     });
 
     csv += `\nTotals,,,,,,,,\n`;
@@ -163,15 +202,27 @@ export default function Home() {
     setGeneratedExpensesCsvContent(csv);
     downloadCsv(csv, 'expenses');
 
-    const csvFile = new File([csv], getCsvFileName('expenses'), { type: 'text/csv' });
-    const canShareFiles = navigator.share && navigator.canShare && navigator.canShare({ files: [csvFile] });
+    const files: File[] = [new File([csv], getCsvFileName('expenses'), { type: 'text/csv' })];
+
+    for (let i = 0; i < expenses.items.length; i++) {
+      const item = expenses.items[i];
+      if (item.receiptPhoto) {
+        try {
+          const res = await fetch(item.receiptPhoto);
+          const blob = await res.blob();
+          files.push(new File([blob], `receipt-${i + 1}-${item.category.replace(/[^a-zA-Z0-9]/g, '_')}.jpg`, { type: 'image/jpeg' }));
+        } catch {}
+      }
+    }
+
+    const canShareFiles = navigator.share && navigator.canShare && navigator.canShare({ files });
 
     if (canShareFiles) {
       try {
         await navigator.share({
           title: `Expenses - Week Commencing ${state.weekStartDate}`,
           text: engineerName.trim() ? `Expenses for ${engineerName.trim()} - Week commencing ${state.weekStartDate}` : `Expenses - Week commencing ${state.weekStartDate}`,
-          files: [csvFile],
+          files,
         });
         return;
       } catch (err: any) {
@@ -507,13 +558,67 @@ export default function Home() {
                             </div>
                           </div>
                         )}
-                        <div className="flex items-center gap-2">
-                          <Switch
-                            checked={item.receipt}
-                            onCheckedChange={(checked) => updateExpense(item.id, { receipt: checked })}
-                            data-testid={`switch-expense-receipt-${idx}`}
-                          />
-                          <Label className="text-sm font-medium text-slate-700">Receipt kept</Label>
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={item.receipt}
+                              onCheckedChange={(checked) => updateExpense(item.id, { receipt: checked })}
+                              data-testid={`switch-expense-receipt-${idx}`}
+                            />
+                            <Label className="text-sm font-medium text-slate-700">Receipt kept</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              className="hidden"
+                              ref={(el) => { fileInputRefs.current[item.id] = el; }}
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handlePhotoCapture(item.id, file);
+                                e.target.value = '';
+                              }}
+                              data-testid={`input-expense-photo-${idx}`}
+                            />
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs"
+                              onClick={() => fileInputRefs.current[item.id]?.click()}
+                              data-testid={`button-expense-photo-${idx}`}
+                            >
+                              <Camera className="h-3.5 w-3.5 mr-1.5" />
+                              {item.receiptPhoto ? 'Replace Photo' : 'Add Photo'}
+                            </Button>
+                            {item.receiptPhoto && (
+                              <>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="text-xs"
+                                  onClick={() => setPreviewPhoto(item.receiptPhoto!)}
+                                  data-testid={`button-view-photo-${idx}`}
+                                >
+                                  <Eye className="h-3.5 w-3.5 mr-1.5" /> View
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-xs text-red-400 hover:text-red-600"
+                                  onClick={() => updateExpense(item.id, { receiptPhoto: undefined })}
+                                  data-testid={`button-remove-photo-${idx}`}
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </>
+                            )}
+                          </div>
+                          {item.receiptPhoto && (
+                            <div className="w-16 h-16 rounded border border-slate-200 overflow-hidden cursor-pointer" onClick={() => setPreviewPhoto(item.receiptPhoto!)}>
+                              <img src={item.receiptPhoto} alt="Receipt" className="w-full h-full object-cover" />
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -605,6 +710,17 @@ export default function Home() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!previewPhoto} onOpenChange={() => setPreviewPhoto(null)}>
+        <DialogContent className="sm:max-w-lg p-2">
+          <DialogHeader className="p-2">
+            <DialogTitle className="text-sm">Receipt Photo</DialogTitle>
+          </DialogHeader>
+          {previewPhoto && (
+            <img src={previewPhoto} alt="Receipt" className="w-full rounded" />
+          )}
         </DialogContent>
       </Dialog>
 
