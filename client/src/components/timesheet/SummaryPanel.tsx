@@ -71,17 +71,17 @@ export function SummaryPanel({ state }: { state: TimesheetState }) {
               ).toFixed(2)}</span>
             </div>
             
-            {summary.pay.payRepairs > 0 && (
+            {state.repairs.count > 0 && (
               <div className="flex justify-between items-center text-sm text-green-300 border-b border-slate-800 pb-2">
-                <span>Repairs ({state.repairs.count} @ £10)</span>
-                <span className="font-mono text-base">£{summary.pay.payRepairs.toFixed(2)}</span>
+                <span>Repairs Logged</span>
+                <span className="font-mono text-base">{state.repairs.count}</span>
               </div>
             )}
             
-            {summary.pay.payExtraJobs > 0 && (
+            {state.extraJobs.count > 0 && (
               <div className="flex justify-between items-center text-sm text-green-300 border-b border-slate-800 pb-2">
-                <span>Extra Jobs ({state.extraJobs.count} @ £10)</span>
-                <span className="font-mono text-base">£{summary.pay.payExtraJobs.toFixed(2)}</span>
+                <span>Extra Jobs Logged</span>
+                <span className="font-mono text-base">{state.extraJobs.count}</span>
               </div>
             )}
           </div>
