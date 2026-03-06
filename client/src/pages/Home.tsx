@@ -120,6 +120,14 @@ export default function Home() {
   };
 
   const handleSubmit = async () => {
+    if (state.repairs.count > 0 && !state.repairs.notes.trim()) {
+      alert('Please add notes for your repairs before submitting.');
+      return;
+    }
+    if (state.extraJobs.count > 0 && !state.extraJobs.notes.trim()) {
+      alert('Please add notes for your extra jobs before submitting.');
+      return;
+    }
     const csv = buildCsv();
     setGeneratedCsvContent(csv);
     downloadCsv(csv, 'timesheet');
@@ -309,7 +317,7 @@ export default function Home() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg flex items-center gap-2 font-bold text-slate-800">
                         <Wrench className="h-5 w-5 text-green-600" />
-                        Repairs (£10 ea)
+                        Repairs
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -325,14 +333,19 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-700">Notes / Job References</Label>
+                        <Label className="text-sm font-semibold text-slate-700">
+                          Notes / Job References {state.repairs.count > 0 && <span className="text-red-500">*</span>}
+                        </Label>
                         <Textarea 
                           placeholder="e.g. LD***" 
                           value={state.repairs.notes}
                           onChange={(e) => setRepairs({ notes: e.target.value })}
-                          className="resize-none h-24 text-sm"
+                          className={`resize-none h-24 text-sm ${state.repairs.count > 0 && !state.repairs.notes.trim() ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                           data-testid="input-repairs-notes"
                         />
+                        {state.repairs.count > 0 && !state.repairs.notes.trim() && (
+                          <p className="text-xs text-red-500">Required when repairs are logged</p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -341,7 +354,7 @@ export default function Home() {
                     <CardHeader className="pb-3">
                       <CardTitle className="text-lg flex items-center gap-2 font-bold text-slate-800">
                         <Briefcase className="h-5 w-5 text-blue-600" />
-                        Extra Jobs (£10 ea)
+                        Extra Jobs
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -357,14 +370,19 @@ export default function Home() {
                         />
                       </div>
                       <div className="space-y-2">
-                        <Label className="text-sm font-semibold text-slate-700">Notes / References</Label>
+                        <Label className="text-sm font-semibold text-slate-700">
+                          Notes / References {state.extraJobs.count > 0 && <span className="text-red-500">*</span>}
+                        </Label>
                         <Textarea 
                           placeholder="e.g. LD***" 
                           value={state.extraJobs.notes}
                           onChange={(e) => setExtraJobs({ notes: e.target.value })}
-                          className="resize-none h-24 text-sm"
+                          className={`resize-none h-24 text-sm ${state.extraJobs.count > 0 && !state.extraJobs.notes.trim() ? 'border-red-400 ring-1 ring-red-400' : ''}`}
                           data-testid="input-extra-jobs-notes"
                         />
+                        {state.extraJobs.count > 0 && !state.extraJobs.notes.trim() && (
+                          <p className="text-xs text-red-500">Required when extra jobs are logged</p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
