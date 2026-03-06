@@ -55,15 +55,12 @@ export function calculateSummary(state: TimesheetState) {
   const paySunday = sundayHours * base * 2.0;
   const payBankHoliday = bankHolidayHours * base * 2.0;
   
-  const payRepairs = (state.repairs?.count || 0) * 10;
-  const payExtraJobs = (state.extraJobs?.count || 0) * 10;
-
-  const totalGrossPay = payStandard + payWeekdayOT + paySaturday + paySunday + payBankHoliday + payRepairs + payExtraJobs;
+  const totalGrossPay = payStandard + payWeekdayOT + paySaturday + paySunday + payBankHoliday;
   const totalHours = standardHours + weekdayOvertime + saturdayHours + sundayHours + bankHolidayHours;
 
   return {
     hours: { standardHours, weekdayOvertime, saturdayHours, sundayHours, bankHolidayHours, total: totalHours },
-    pay: { payStandard, payWeekdayOT, paySaturday, paySunday, payBankHoliday, payRepairs, payExtraJobs, totalGrossPay }
+    pay: { payStandard, payWeekdayOT, paySaturday, paySunday, payBankHoliday, totalGrossPay }
   };
 }
 
