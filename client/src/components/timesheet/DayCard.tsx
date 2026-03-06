@@ -19,12 +19,12 @@ export function DayCard({ day, index, updateDay, updateTimeBlock }: DayCardProps
   const shortDate = format(date, 'MMM d');
   const hours = calculateDayHours(day);
 
-  const isInactive = day.isWeekend ? !day.workedWeekend : (day.isDayOff || day.isSick);
-  const showTimeInputs = day.isWeekend ? day.workedWeekend : (!day.isDayOff && !day.isSick);
+  const isInactive = day.isWeekend ? !day.workedWeekend : false;
+  const showTimeInputs = day.isWeekend ? day.workedWeekend : true;
 
   return (
     <Card className={`relative overflow-hidden transition-all duration-200 ${isInactive ? 'opacity-60 bg-muted/50' : 'bg-card'}`}>
-      <div className={`absolute top-0 left-0 w-1.5 h-full ${day.isSick ? 'bg-red-500' : day.isBankHoliday ? 'bg-purple-500' : day.isWeekend ? 'bg-orange-400' : 'bg-blue-500'}`} />
+      <div className={`absolute top-0 left-0 w-1.5 h-full ${day.isBankHoliday ? 'bg-purple-500' : day.isWeekend ? 'bg-orange-400' : 'bg-blue-500'}`} />
       
       <CardHeader className="pb-3 pt-4 px-4 sm:px-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
         <div className="w-full sm:w-auto flex justify-between items-center">
@@ -36,7 +36,7 @@ export function DayCard({ day, index, updateDay, updateTimeBlock }: DayCardProps
           {day.isBankHoliday && (
             <span className="text-purple-600 font-semibold text-xs uppercase tracking-wider bg-purple-100 px-2 py-1 rounded">Bank Holiday</span>
           )}
-          {day.isWeekend ? (
+          {day.isWeekend && (
             <div className="flex items-center gap-2">
               <Switch 
                 id={`worked-${index}`}
@@ -45,25 +45,6 @@ export function DayCard({ day, index, updateDay, updateTimeBlock }: DayCardProps
               />
               <Label htmlFor={`worked-${index}`} className="cursor-pointer whitespace-nowrap text-orange-600 font-semibold">Worked (Overtime)</Label>
             </div>
-          ) : (
-            <>
-              <div className="flex items-center gap-2">
-                <Switch 
-                  id={`off-${index}`}
-                  checked={day.isDayOff} 
-                  onCheckedChange={(c) => updateDay(index, { isDayOff: c, isSick: c ? false : day.isSick })}
-                />
-                <Label htmlFor={`off-${index}`} className="cursor-pointer whitespace-nowrap">Holiday</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch 
-                  id={`sick-${index}`}
-                  checked={day.isSick} 
-                  onCheckedChange={(c) => updateDay(index, { isSick: c, isDayOff: c ? false : day.isDayOff })}
-                />
-                <Label htmlFor={`sick-${index}`} className="cursor-pointer whitespace-nowrap text-red-600">Sickness</Label>
-              </div>
-            </>
           )}
         </div>
       </CardHeader>
